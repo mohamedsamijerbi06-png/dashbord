@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FlowState — AI Productivity Dashboard</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="dashboard.css"/>
+</head>
+<body>
+
+<!-- ===================== SIDEBAR ===================== -->
+<div class="app-wrapper">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon"><i class="bi bi-lightning-charge-fill"></i></div>
+      <span class="brand-name">FlowState</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" data-section="dashboard">
+        <i class="bi bi-grid-1x2-fill"></i><span>Dashboard</span>
+      </a>
+      <a href="#" class="nav-item" data-section="tasks">
+        <i class="bi bi-check2-square"></i><span>Tasks</span>
+      </a>
+      <a href="#" class="nav-item" data-section="timer">
+        <i class="bi bi-stopwatch-fill"></i><span>Focus Timer</span>
+      </a>
+      <a href="#" class="nav-item" data-section="stats">
+        <i class="bi bi-bar-chart-fill"></i><span>Analytics</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <!-- Theme toggle -->
+      <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+        <i class="bi bi-sun-fill" id="themeIcon"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ===================== MAIN CONTENT ===================== -->
+  <main class="main-content">
+
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <button class="sidebar-toggle d-lg-none" id="sidebarToggle">
+        <i class="bi bi-list"></i>
+      </button>
+      <div class="topbar-greeting">
+        <h1 id="greeting">Good morning</h1>
+        <p id="currentDate"></p>
+      </div>
+      <div class="topbar-actions">
+        <div class="productivity-badge" id="productivityScore">
+          <i class="bi bi-lightning-charge-fill"></i>
+          <span id="scoreLabel">0% Focused</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ===================== SECTION: DASHBOARD ===================== -->
+    <section id="section-dashboard" class="content-section active">
+      <!-- Stat Cards -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-xl-3">
+          <div class="stat-card stat-card--tasks">
+            <div class="stat-icon"><i class="bi bi-check2-all"></i></div>
+            <div class="stat-value" id="statCompleted">0</div>
+            <div class="stat-label">Tasks Done</div>
+            <div class="stat-bar"><div class="stat-bar-fill" id="barCompleted"></div></div>
+          </div>
+        </div>
+        <div class="col-6 col-xl-3">
+          <div class="stat-card stat-card--pending">
+            <div class="stat-icon"><i class="bi bi-hourglass-split"></i></div>
+            <div class="stat-value" id="statPending">0</div>
+            <div class="stat-label">Pending</div>
+            <div class="stat-bar"><div class="stat-bar-fill" id="barPending"></div></div>
+          </div>
+        </div>
+        <div class="col-6 col-xl-3">
+          <div class="stat-card stat-card--focus">
+            <div class="stat-icon"><i class="bi bi-stopwatch-fill"></i></div>
+            <div class="stat-value" id="statFocus">0</div>
+            <div class="stat-label">Focus Sessions</div>
+            <div class="stat-bar"><div class="stat-bar-fill" id="barFocus"></div></div>
+          </div>
+        </div>
+        <div class="col-6 col-xl-3">
+          <div class="stat-card stat-card--streak">
+            <div class="stat-icon"><i class="bi bi-fire"></i></div>
+            <div class="stat-value" id="statStreak">0</div>
+            <div class="stat-label">Day Streak</div>
+            <div class="stat-bar"><div class="stat-bar-fill" id="barStreak"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="row g-3 mb-4">
+        <div class="col-lg-8">
+          <div class="glass-card">
+            <div class="card-header-custom">
+              <h3 class="card-title">Weekly Productivity</h3>
+              <span class="badge-pill">This Week</span>
+            </div>
+            <canvas id="weeklyChart" height="120"></canvas>
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <div class="glass-card">
+            <div class="card-header-custom">
+              <h3 class="card-title">Task Distribution</h3>
+            </div>
+            <canvas id="donutChart" height="200"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Tasks Preview -->
+      <div class="glass-card">
+        <div class="card-header-custom">
+          <h3 class="card-title">Today's Tasks</h3>
+          <button class="btn-ghost" onclick="switchSection('tasks')">View All <i class="bi bi-arrow-right"></i></button>
+        </div>
+        <div id="dashboardTaskList" class="task-preview-list"></div>
+      </div>
+    </section>
+
+    <!-- ===================== SECTION: TASKS ===================== -->
+    <section id="section-tasks" class="content-section">
+      <div class="section-header">
+        <h2>Task Manager</h2>
+        <button class="btn-primary-custom" data-bs-toggle="modal" data-bs-target="#taskModal">
+          <i class="bi bi-plus-lg"></i> New Task
+        </button>
+      </div>
+
+      <!-- Filter Tabs -->
+      <div class="filter-tabs mb-4">
+        <button class="filter-tab active" data-filter="all">All</button>
+        <button class="filter-tab" data-filter="pending">Pending</button>
+        <button class="filter-tab" data-filter="in-progress">In Progress</button>
+        <button class="filter-tab" data-filter="completed">Completed</button>
+      </div>
+
+      <div id="taskList" class="task-grid"></div>
+    </section>
+
+    <!-- ===================== SECTION: TIMER ===================== -->
+    <section id="section-timer" class="content-section">
+      <div class="section-header">
+        <h2>Focus Timer</h2>
+      </div>
+
+      <div class="row justify-content-center">
+        <div class="col-lg-6">
+          <div class="glass-card text-center timer-card">
+            <!-- Mode Switcher -->
+            <div class="timer-modes mb-4">
+              <button class="timer-mode-btn active" data-mode="pomodoro" data-time="1500">Pomodoro</button>
+              <button class="timer-mode-btn" data-mode="short" data-time="300">Short Break</button>
+              <button class="timer-mode-btn" data-mode="long" data-time="900">Long Break</button>
+            </div>
+
+            <!-- Circular Timer -->
+            <div class="timer-ring-wrapper">
+              <svg class="timer-svg" viewBox="0 0 200 200">
+                <circle class="timer-track" cx="100" cy="100" r="90"/>
+                <circle class="timer-progress" id="timerProgress" cx="100" cy="100" r="90"/>
+              </svg>
+              <div class="timer-display">
+                <div class="timer-time" id="timerDisplay">25:00</div>
+                <div class="timer-mode-label" id="timerModeLabel">Focus Time</div>
+              </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="timer-controls mt-4">
+              <button class="timer-btn timer-btn--secondary" id="timerReset" title="Reset">
+                <i class="bi bi-arrow-counterclockwise"></i>
+              </button>
+              <button class="timer-btn timer-btn--primary" id="timerStartStop">
+                <i class="bi bi-play-fill" id="timerIcon"></i>
+              </button>
+              <button class="timer-btn timer-btn--secondary" id="timerSkip" title="Skip">
+                <i class="bi bi-skip-end-fill"></i>
+              </button>
+            </div>
+
+            <!-- Session Counter -->
+            <div class="session-dots mt-4" id="sessionDots">
+              <span class="session-dot" data-session="1"></span>
+              <span class="session-dot" data-session="2"></span>
+              <span class="session-dot" data-session="3"></span>
+              <span class="session-dot" data-session="4"></span>
+            </div>
+            <p class="session-text mt-2">Session <span id="sessionCount">1</span> of 4</p>
+
+            <!-- Current Task for Timer -->
+            <div class="timer-task-select mt-3">
+              <label class="form-label-custom">Working on:</label>
+              <select class="form-select-custom" id="timerTaskSelect">
+                <option value="">— Select a task —</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Timer Stats Side Card -->
+        <div class="col-lg-4">
+          <div class="glass-card">
+            <h3 class="card-title mb-3">Today's Focus</h3>
+            <div class="focus-stat-row">
+              <span>Sessions Completed</span>
+              <strong id="todaySessions">0</strong>
+            </div>
+            <div class="focus-stat-row">
+              <span>Total Focus Time</span>
+              <strong id="todayFocusTime">0 min</strong>
+            </div>
+            <div class="focus-stat-row">
+              <span>Breaks Taken</span>
+              <strong id="todayBreaks">0</strong>
+            </div>
+            <hr class="divider"/>
+            <canvas id="focusBarChart" height="160"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== SECTION: ANALYTICS ===================== -->
+    <section id="section-stats" class="content-section">
+      <div class="section-header">
+        <h2>Analytics</h2>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-lg-6">
+          <div class="glass-card">
+            <div class="card-header-custom">
+              <h3 class="card-title">Tasks by Priority</h3>
+            </div>
+            <canvas id="priorityChart" height="220"></canvas>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="glass-card">
+            <div class="card-header-custom">
+              <h3 class="card-title">Completion Rate (7 Days)</h3>
+            </div>
+            <canvas id="completionChart" height="220"></canvas>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="glass-card">
+            <div class="card-header-custom">
+              <h3 class="card-title">Monthly Focus Hours</h3>
+            </div>
+            <canvas id="monthlyFocusChart" height="120"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ===================== TASK MODAL ===================== -->
+<div class="modal fade" id="taskModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content glass-modal">
+      <div class="modal-header-custom">
+        <h5 class="modal-title" id="taskModalTitle">Add New Task</h5>
+        <button type="button" class="btn-close-custom" data-bs-dismiss="modal">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body p-4">
+        <input type="hidden" id="taskEditId"/>
+
+        <div class="mb-3">
+          <label class="form-label-custom">Task Title *</label>
+          <input type="text" id="taskTitle" class="input-custom" placeholder="What needs to be done?" maxlength="80"/>
+        </div>
+        <div class="mb-3">
+          <label class="form-label-custom">Description</label>
+          <textarea id="taskDesc" class="input-custom" rows="3" placeholder="Add details..."></textarea>
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <label class="form-label-custom">Priority</label>
+            <select id="taskPriority" class="input-custom">
+              <option value="low">🟢 Low</option>
+              <option value="medium" selected>🟡 Medium</option>
+              <option value="high">🔴 High</option>
+            </select>
+          </div>
+          <div class="col-6">
+            <label class="form-label-custom">Category</label>
+            <select id="taskCategory" class="input-custom">
+              <option value="work">💼 Work</option>
+              <option value="personal">🏠 Personal</option>
+              <option value="study">📚 Study</option>
+              <option value="health">💪 Health</option>
+              <option value="other">📌 Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label-custom">Due Date</label>
+          <input type="date" id="taskDue" class="input-custom"/>
+        </div>
+        <div class="mb-3">
+          <label class="form-label-custom">Status</label>
+          <select id="taskStatus" class="input-custom">
+            <option value="pending">Pending</option>
+            <option value="in-progress">In Progress</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer-custom">
+        <button type="button" class="btn-ghost" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn-primary-custom" id="saveTaskBtn">
+          <i class="bi bi-check-lg"></i> Save Task
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="toast-wrapper" id="toastWrapper"></div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- App JS -->
+<script src="dashbord.js"></script>
+</body>
+</html>
